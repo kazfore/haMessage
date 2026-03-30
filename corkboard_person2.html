@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Cork Board Messages</title>
+<style>
+
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Noto+Sans+JP:wght@400;500&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:#2c1a0e;font-family:'Noto Sans JP',sans-serif}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;
+  background:
+    repeating-linear-gradient(92deg,transparent 0,transparent 18px,rgba(0,0,0,.04) 18px,rgba(0,0,0,.04) 20px),
+    repeating-linear-gradient(180deg,transparent 0,transparent 60px,rgba(255,200,120,.03) 60px,rgba(255,200,120,.03) 62px),
+    linear-gradient(160deg,#3a2210 0%,#2c1a0e 40%,#1e1008 100%);
+}
+.page{position:relative;height:100vh;height:100dvh;display:flex;flex-direction:column;align-items:center}
+header{flex-shrink:0;text-align:center;padding:clamp(.5rem,2vw,.9rem) 1rem 0;z-index:2}
+header h1{font-family:'Caveat',cursive;font-weight:700;font-size:clamp(1.5rem,6vw,2.1rem);color:#f0d090;letter-spacing:.04em;text-shadow:0 2px 8px rgba(0,0,0,.5),0 0 30px rgba(240,180,80,.3)}
+header p{margin-top:.1rem;font-size:clamp(.48rem,1.8vw,.62rem);color:rgba(240,200,120,.4);letter-spacing:.18em}
+#cork-wrap{flex:1 1 auto;width:100%;max-width:520px;position:relative;margin:.5rem .8rem .4rem;border-radius:12px;overflow:hidden}
+#cork-board{
+  width:100%;height:100%;position:relative;border-radius:10px;
+  background:
+    radial-gradient(ellipse 3px 3px at 20% 30%,rgba(180,120,40,.5) 0%,transparent 100%),
+    radial-gradient(ellipse 4px 5px at 60% 70%,rgba(160,100,30,.4) 0%,transparent 100%),
+    radial-gradient(ellipse 2px 3px at 80% 20%,rgba(190,130,50,.45) 0%,transparent 100%),
+    radial-gradient(ellipse 5px 4px at 40% 80%,rgba(150,90,20,.4) 0%,transparent 100%),
+    repeating-linear-gradient(45deg,transparent 0,transparent 3px,rgba(180,110,30,.06) 3px,rgba(180,110,30,.06) 4px),
+    repeating-linear-gradient(-45deg,transparent 0,transparent 5px,rgba(160,90,20,.05) 5px,rgba(160,90,20,.05) 6px),
+    linear-gradient(145deg,#c8903c 0%,#b07828 30%,#c89040 55%,#a06820 80%,#b87830 100%);
+  box-shadow:inset 0 0 40px rgba(0,0,0,.25),inset 0 0 8px rgba(0,0,0,.3),0 4px 20px rgba(0,0,0,.5),0 0 0 8px #6b3e1a,0 0 0 10px #4a2a10,0 8px 30px rgba(0,0,0,.6);
+}
+.sticky{position:absolute;cursor:pointer;border:none;font-family:'Caveat',cursive;font-size:clamp(.68rem,2.6vw,.88rem);line-height:1.4;text-align:center;word-break:break-all;padding:.5em .55em .4em;border-radius:2px;transform-origin:center center;overflow:visible;transition:transform .2s cubic-bezier(.34,1.6,.64,1),box-shadow .2s,filter .15s;animation:stickyDrop .6s cubic-bezier(.34,1.3,.64,1) both}
+.sticky::before{content:'';position:absolute;top:var(--pin-top,-14px);left:50%;transform:translateX(-50%);width:14px;height:14px;border-radius:50%;background:var(--pin-bg,radial-gradient(circle at 35% 35%,#ff9090,#cc1a1a));box-shadow:0 3px 6px rgba(0,0,0,.5),inset 0 1px 2px rgba(255,255,255,.35);z-index:3;transition:top .25s cubic-bezier(.34,1.6,.64,1)}
+.sticky::after{content:'';position:absolute;top:var(--pin-needle,-6px);left:50%;transform:translateX(-50%);width:2.5px;height:var(--pin-needle-h,10px);background:linear-gradient(180deg,#aaa 0%,#666 100%);border-radius:0 0 2px 2px;z-index:2;transition:top .25s cubic-bezier(.34,1.6,.64,1),height .25s cubic-bezier(.34,1.6,.64,1)}
+.sticky:active{transform:var(--base-transform) scale(1.08)!important;filter:brightness(1.1)}
+@keyframes stickyDrop{from{opacity:0;transform:var(--base-transform) translateY(-30px) scale(.7)}to{opacity:1;transform:var(--base-transform)}}
+#modal-overlay{display:none;position:fixed;inset:0;background:rgba(10,6,2,.8);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:1000;align-items:center;justify-content:center;padding:1.5rem}
+#modal-overlay.open{display:flex}
+#modal-card{width:100%;max-width:360px;position:relative;border-radius:4px;padding:2.2rem 1.8rem 1.8rem;animation:noteOpen .38s cubic-bezier(.34,1.3,.64,1);box-shadow:0 20px 60px rgba(0,0,0,.55),0 4px 12px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.2);max-height:85vh;overflow-y:auto}
+@keyframes noteOpen{from{opacity:0;transform:scale(.7) rotate(-4deg)}60%{transform:scale(1.04) rotate(.5deg)}to{opacity:1;transform:scale(1) rotate(0deg)}}
+#modal-pin{position:absolute;top:-10px;left:50%;transform:translateX(-50%);width:20px;height:20px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ff9090,#cc2020);box-shadow:0 3px 8px rgba(0,0,0,.45),inset 0 1px 3px rgba(255,255,255,.35);z-index:2}
+#modal-pin::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);width:2px;height:10px;background:linear-gradient(#999,#666);border-radius:0 0 2px 2px}
+#modal-num{font-family:'Caveat',cursive;font-size:.8rem;opacity:.45;text-align:right;margin-bottom:.3rem}
+.note-lines{position:absolute;inset:3.2rem 0 0;background:repeating-linear-gradient(transparent 0,transparent 27px,rgba(100,80,160,.15) 27px,rgba(100,80,160,.15) 28px);pointer-events:none;border-radius:0 0 4px 4px}
+#modal-message{font-family:'Caveat',cursive;font-size:clamp(1rem,4.5vw,1.25rem);line-height:1.85;text-align:center;white-space:pre-wrap;word-break:break-all;position:relative;z-index:1}
+#modal-counter{text-align:right;font-size:.65rem;opacity:.4;margin-top:.8rem;font-family:'Caveat',cursive}
+#modal-close{position:absolute;top:.6rem;right:.7rem;background:none;border:none;cursor:pointer;font-size:1.1rem;opacity:.35;transition:opacity .15s;line-height:1;color:inherit}
+#modal-close:hover{opacity:.7}
+
+</style>
+</head>
+<body>
+<div class="page">
+<header>
+  <h1>✉ Cork Board Messages</h1>
+  <p>TAP A NOTE TO READ</p>
+</header>
+<div id="cork-wrap"><div id="cork-board"></div></div>
+<div id="modal-overlay" role="dialog" aria-modal="true">
+  <div id="modal-card">
+    <div id="modal-pin"></div>
+    <div class="note-lines"></div>
+    <button id="modal-close" aria-label="閉じる">&#x2715;</button>
+    <div id="modal-num"></div>
+    <p id="modal-message"></p>
+    <p id="modal-counter"></p>
+  </div>
+</div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+var MESSAGES = ["\u30ed\u30c3\u30d4\u30fc\u3089\u3076", "\u5f15\u7d99\u304e\u3088\u308d\u3057\u304f\u3002", "\u30d9\u30bf\u306a\u8a00\u3044\u65b9\u3067\u3059\u304c\u3001\u3044\u3064\u3082\u7e01\u306e\u4e0b\u306e\u529b\u6301\u3061\u3068\u3057\u3066\u5b58\u5728\u611f\u3092\u793a\u3057\u3066\u304f\u308c\u3066\u3042\u308a\u304c\u3068\u3046\uff01\u6b21\u5e74\u5ea6\u306fES\u57fa\u76e4\u539f\u5c40\u5074\u306e\u3076\u3063\u3061\u304e\u308a\u306e\u6700\u5e74\u5c11\uff1f\u3068\u3057\u3066\u66f4\u306a\u308b\u6d3b\u8e8d\u3092\u671f\u5f85\u3057\u3066\u3044\u307e\u3059\uff01\u65b0TES\u3082\u5f15\u304d\u7d9a\u304d\u3088\u308d\u3057\u304f\u7b11", "\uff11\u5e74\u9593\u5927\u5909\u304a\u4e16\u8a71\u306b\u306a\u308a\u307e\u3057\u305f\uff01\u5e74\u5ea6\u521d\u3081\u306b\u7570\u52d5\u8005\u5411\u3051\u306bES\u57fa\u76e4\u6982\u8981\u8aac\u660e\u9802\u3044\u305f\u6642\u304b\u3089\u3001\u300e\u3053\u306e\u65b9\u51c4\u3059\u304e\u308b\u30fb\u30fb\u300f\u3068\u3044\u3046\u5370\u8c61\u3060\u3063\u305f\u306e\u3067\u3059\u304c\u30011\u5e74\u9593\u305d\u306e\u5370\u8c61\u306f\u5909\u308f\u308b\u3053\u3068\u306f\u306a\u304b\u3063\u305f\u3067\u3059\u7b11\uff08\u3080\u3057\u308d\u5f37\u307e\u308b\u4e00\u65b9\u30fb\u30fb\uff09\u3002\u305f\u304f\u3055\u3093\u52a9\u3051\u3066\u3044\u305f\u3060\u304d\u3001\u672c\u5f53\u306b\u3042\u308a\u304c\u3068\u3046\u3054\u3056\u3044\u307e\u3057\u305f\u3002\u91d1\u5b50\u3055\u3093\u306e\u3044\u3089\u3057\u3083\u3089\u306a\u3044\u65e5\u5e38\u7d99\u7d9a\u306f\u3042\u307e\u308a\u60f3\u50cf\u3067\u304d\u307e\u305b\u3093\u304c\u3001\u6b21\u5e74\u5ea6\u3082\u8fd1\u3044\u5834\u6240\u306b\u3044\u3089\u3063\u3057\u3083\u308b\u3068\u306e\u3053\u3068\u3067\u3059\u306e\u3067\u3001\u307e\u305f\u304a\u8a71\u3055\u305b\u3066\u9802\u3051\u308b\u3068\u5b09\u3057\u3044\u3067\u3059\uff01\u4eca\u5f8c\u3068\u3082\u3088\u308d\u3057\u304f\u304a\u9858\u3044\u3044\u305f\u3057\u307e\u3059\u3002", "\u3044\u3064\u307e\u3067\u3082\u96e2\u3055\u306a\u3044\u3088\uff01\u3053\u308c\u304b\u3089\u3082\u30e8\u30ed\u30b7\u30af\u304a\u9858\u3044\u3057\u307e\u3059\uff01\uff01", "\u77ed\u3044\u9593\u3067\u3057\u305f\u304c\u5927\u5909\u304a\u4e16\u8a71\u306b\u306a\u308a\u3042\u308a\u304c\u3068\u3046\u3054\u3056\u3044\u307e\u3057\u305f\uff01\u90e8\u7f72\u306f\u5909\u308f\u3063\u3066\u3057\u307e\u3044\u307e\u3059\u304c\u3001\u4eca\u5f8c\u3068\u3082\u5909\u308f\u3089\u305a\u304a\u4ed8\u304d\u5408\u3044\u3044\u305f\u3060\u3051\u307e\u3059\u3068\u5b09\u3057\u3044\u3067\u3059\uff01", "1\u5e74\u9593\u3001TES\u30e1\u30f3\u30c6\u95a2\u9023\u3067\u5927\u5909\u304a\u4e16\u8a71\u306b\u306a\u308a\u307e\u3057\u305f\u3002\n\u81f3\u3089\u306a\u3044\u3053\u3068\u304c\u591a\u304f\u3001\u91d1\u5b50\u3055\u3093\u306b\u306f\u5927\u5909\u3054\u8ff7\u60d1\u3092\u304a\u304b\u3051\u3057\u305f\u3068\u601d\u3044\u307e\u3059\u304c\u3001\u3044\u3064\u3082\u4e01\u5be7\u306b\u30d5\u30a9\u30ed\u30fc\u3057\u3066\u3044\u305f\u3060\u3044\u3066\u3042\u308a\u304c\u3068\u3046\u3054\u3056\u3044\u307e\u3059\u3002\n\u6b21\u5e74\u5ea6\u306f\u3054\u7570\u52d5\u306b\u306a\u3063\u3066\u3057\u307e\u3044\u307e\u3059\u304c\u3001\u305c\u3072\u6b21\u5e74\u5ea6\u3082TES\u30b5\u30dd\u95a2\u9023\u306e\u696d\u52d9\u306b\u3064\u3044\u3066\u6559\u3048\u3066\u3044\u305f\u3060\u3051\u307e\u3059\u3068\u5e78\u3044\u3067\u3059\u3002", "\u91d1\u5b50\u3055\u3093\u306b\u983c\u308a\u304d\u308a\u306a\u3068\u3053\u308d\u304c\u591a\u304f\u3001\u3054\u8ff7\u60d1\u3092\u305f\u304f\u3055\u3093\u304a\u639b\u3051\u3044\u305f\u3057\u307e\u3057\u305f\u3002\u3054\u7570\u52d5\u5148\u3067\u306e\u4e00\u5c64\u306e\u6d3b\u8e8d\u3092\u7948\u5ff5\u3057\u305f\u3044\u3068\u3053\u308d\u3067\u3059\u304c\u3001\u65e5\u5e38\u7d99\u7d9aT\u306e\u6b21\u5e74\u5ea6\u304c\u5fc3\u914d\u3067\u3059\u3002\uff08\u5c02\u9580\u6027\u306e\u8981\u6c42\u304c\u9ad8\u3059\u304e\u3066\u4e0d\u5b89\u3057\u304b\u3042\u308a\u307e\u305b\u3093\uff09", "\u7269\u8170\u306e\u67d4\u3089\u304b\u3055\u3068\u4e01\u5be7\u306a\u8aac\u660e\u306b\u3044\u3064\u3082\u30e1\u30ed\u30e1\u30ed\u3067\u3057\u305f\u3002\u5965\u5e95\u306b\u96a0\u3057\u6301\u3064\u7834\u58ca\u529b\u6e80\u70b9\u306e\u9762\u767d\u3055\u3092\u79c1\u306f\u77e5\u3063\u3066\u3044\u307e\u3059\u3002\n\u65b0\u3057\u3044\u8077\u5834\u3067\u3082\u3044\u3064\u3082\u306e\u611f\u3058\u3067\u3084\u3063\u3061\u3083\u3063\u3066\u304f\u3060\u3055\u3044\uff01", "OA\u95a2\u9023\u3067\u306f\u975e\u5e38\u306b\u3054\u8ff7\u60d1\u3092\u304a\u304b\u3051\u3057\u305f\u3088\u3046\u306b\u601d\u3044\u307e\u3059\u3002\nIT\u7121\u77e5\u306e\u79c1\u306b\u3001\u3044\u308d\u3044\u308d\u3068\u76f8\u8ac7\u306b\u4e57\u3063\u3066\u3044\u305f\u3060\u304d\u611f\u8b1d\uff01\u611f\u8b1d\uff01\u3067\u3059\u3002\nHELP\u306e\u969b\u306f\u3069\u3046\u3057\u305f\u3089\u3044\u3044\u3093\u3067\u3057\u3087\u3046\u306d\uff0e\uff0e\uff0e\u3002\n\u3067\u304d\u308c\u3070\u3001\u4eca\u5f8c\u3068\u3082\u3088\u308d\u3057\u304f\u304a\u9858\u3044\u3044\u305f\u3057\u307e\u3059\uff01"];
+
+var NOTE_THEMES = [
+  {bg:'#fef08a',color:'#5a4a00',shadow:'rgba(180,150,0,.3)'},
+  {bg:'#fca5a5',color:'#5a0a0a',shadow:'rgba(200,60,60,.3)'},
+  {bg:'#86efac',color:'#064e20',shadow:'rgba(40,160,80,.3)'},
+  {bg:'#93c5fd',color:'#0a2a5a',shadow:'rgba(40,100,200,.25)'},
+  {bg:'#f9a8d4',color:'#5a0a3a',shadow:'rgba(200,60,140,.3)'},
+  {bg:'#fed7aa',color:'#5a2800',shadow:'rgba(200,100,20,.3)'},
+  {bg:'#c4b5fd',color:'#2a0a5a',shadow:'rgba(120,60,200,.3)'},
+  {bg:'#a7f3d0',color:'#064e3b',shadow:'rgba(20,150,100,.25)'},
+  {bg:'#fde68a',color:'#5a3a00',shadow:'rgba(180,130,0,.3)'},
+  {bg:'#fbcfe8',color:'#5a0a2a',shadow:'rgba(200,80,120,.3)'},
+];
+var PIN_COLORS = [
+  'radial-gradient(circle at 35% 35%,#ff9090,#cc1a1a)',
+  'radial-gradient(circle at 35% 35%,#90c0ff,#1a60cc)',
+  'radial-gradient(circle at 35% 35%,#90ff90,#1acc40)',
+  'radial-gradient(circle at 35% 35%,#ffd090,#cc7a1a)',
+  'radial-gradient(circle at 35% 35%,#d090ff,#7a1acc)',
+  'radial-gradient(circle at 35% 35%,#fff090,#ccb81a)',
+];
+
+function layoutStickies(n, boardW, boardH) {
+  var noteW = Math.min(Math.max(boardW / 4.2, 65), 110);
+  var noteH = noteW * 1.05;
+  var positions = [];
+  var cols = Math.ceil(Math.sqrt(n * (boardW / boardH)));
+  var rows = Math.ceil(n / cols);
+  cols = Math.ceil(n / rows);
+  var cellW = boardW / cols, cellH = boardH / rows;
+  for (var i = 0; i < n; i++) {
+    var col = i % cols, row = Math.floor(i / cols);
+    var jx = (Math.random() - 0.5) * cellW * 0.38;
+    var jy = (Math.random() - 0.5) * cellH * 0.38;
+    var cx = Math.min(Math.max(cellW*(col+0.5)+jx, noteW*0.55), boardW-noteW*0.55);
+    var cy = Math.min(Math.max(cellH*(row+0.5)+jy, noteH*0.55), boardH-noteH*0.55);
+    positions.push({x:cx, y:cy, rot:(Math.random()-0.5)*10, w:noteW, h:noteH});
+  }
+  return positions;
+}
+
+function renderBoard() {
+  var board = document.getElementById('cork-board');
+  board.querySelectorAll('.sticky').forEach(function(el){ el.remove(); });
+  if (MESSAGES.length === 0) return;
+  var boardW = board.clientWidth, boardH = board.clientHeight;
+  if (boardW === 0) return;
+  var positions = layoutStickies(MESSAGES.length, boardW, boardH);
+  MESSAGES.forEach(function(msg, i) {
+    var pos   = positions[i];
+    var theme = NOTE_THEMES[i % NOTE_THEMES.length];
+    var pinBg = PIN_COLORS[i % PIN_COLORS.length];
+    var el = document.createElement('button');
+    el.className = 'sticky';
+    el.style.width      = pos.w + 'px';
+    el.style.height     = pos.h + 'px';
+    el.style.left       = pos.x + 'px';
+    el.style.top        = pos.y + 'px';
+    el.style.background = theme.bg;
+    el.style.color      = theme.color;
+    el.style.setProperty('--pin-bg', pinBg);
+    var so = Math.abs(pos.rot)*0.3+3;
+    el.style.boxShadow = so+'px '+(so+2)+'px '+(so*3)+'px '+theme.shadow+',0 1px 2px rgba(0,0,0,.15)';
+    var tf = 'translate(-50%,-50%) rotate('+pos.rot+'deg)';
+    el.style.setProperty('--base-transform', tf);
+    el.style.transform = tf;
+    el.style.setProperty('--pin-top',      '-30px');
+    el.style.setProperty('--pin-needle',   '-22px');
+    el.style.setProperty('--pin-needle-h', '4px');
+    var delay = i * 0.045;
+    el.style.animationDelay = delay + 's';
+    setTimeout(function(elem, origTf, rot) {
+      return function() {
+        elem.style.setProperty('--pin-top',      '-7px');
+        elem.style.setProperty('--pin-needle',   '-3px');
+        elem.style.setProperty('--pin-needle-h', '10px');
+        var shk = (Math.random()-0.5)*4;
+        elem.style.transition = 'transform .08s ease';
+        elem.style.transform = 'translate(-50%,-50%) rotate('+(rot+shk)+'deg)';
+        setTimeout(function() {
+          elem.style.transition = 'transform .2s cubic-bezier(.34,1.6,.64,1),box-shadow .2s,filter .15s';
+          elem.style.transform = origTf;
+        }, 90);
+      };
+    }(el, tf, pos.rot), (delay+0.55)*1000);
+    var preview = msg.length > 18 ? msg.slice(0,16)+'...' : msg;
+    el.textContent = preview;
+    el.setAttribute('aria-label', (i+1)+'番目のメッセージ');
+    el.addEventListener('click', (function(idx, th, elem) {
+      return function() {
+        elem.style.setProperty('--pin-top', '-4px');
+        elem.style.setProperty('--pin-needle-h', '13px');
+        setTimeout(function() {
+          elem.style.setProperty('--pin-top', '-7px');
+          elem.style.setProperty('--pin-needle-h', '10px');
+        }, 200);
+        openModal(idx, th);
+      };
+    })(i, theme, el));
+    board.appendChild(el);
+  });
+}
+
+function openModal(i, theme) {
+  var card = document.getElementById('modal-card');
+  card.style.background = theme.bg;
+  card.style.color      = theme.color;
+  document.getElementById('modal-num').textContent     = '# ' + (i+1);
+  document.getElementById('modal-message').textContent = MESSAGES[i];
+  document.getElementById('modal-counter').textContent = (i+1) + ' / ' + MESSAGES.length;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
+document.getElementById('modal-overlay').addEventListener('click', function(e) { if(e.target===this) closeModal(); });
+document.getElementById('modal-close').addEventListener('click', closeModal);
+document.addEventListener('keydown', function(e) { if(e.key==='Escape') closeModal(); });
+var sY = 0;
+var cardEl = document.getElementById('modal-card');
+cardEl.addEventListener('touchstart', function(e) { sY=e.touches[0].clientY; }, {passive:true});
+cardEl.addEventListener('touchend',   function(e) { if(e.changedTouches[0].clientY-sY>60) closeModal(); }, {passive:true});
+
+function tryRender(attempt) {
+  var board = document.getElementById('cork-board');
+  if(board.clientWidth===0 && attempt<20) { setTimeout(function(){tryRender(attempt+1);},50); return; }
+  renderBoard();
+}
+var resizeTimer;
+window.addEventListener('resize', function() { clearTimeout(resizeTimer); resizeTimer=setTimeout(function(){tryRender(0);},150); });
+if(document.readyState==='loading') {
+  document.addEventListener('DOMContentLoaded', function() { setTimeout(function(){tryRender(0);},30); });
+} else { setTimeout(function(){tryRender(0);},30); }
+</script>
+</body>
+</html>
