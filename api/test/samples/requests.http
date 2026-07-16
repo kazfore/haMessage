@@ -1,0 +1,46 @@
+### テスト用 汎用サンプルAPI リクエスト集
+### VS Code の "REST Client" 拡張などでそのまま送信できます。
+### server.py を起動した状態でお使いください。
+
+@base = http://127.0.0.1:8000
+
+### API 情報
+GET {{base}}/
+
+### ヘルスチェック
+GET {{base}}/health
+
+### echo (送った JSON がそのまま返る)
+POST {{base}}/echo
+Content-Type: application/json
+
+{
+  "hello": "world",
+  "number": 42
+}
+
+### アイテム一覧
+GET {{base}}/api/items
+
+### アイテム作成
+POST {{base}}/api/items
+Content-Type: application/json
+
+{
+  "name": "新しいアイテム",
+  "note": "メモ"
+}
+
+### アイテム取得 (id は作成時の値に置き換え)
+GET {{base}}/api/items/1
+
+### アイテム更新
+PUT {{base}}/api/items/1
+Content-Type: application/json
+
+{
+  "note": "更新後のメモ"
+}
+
+### アイテム削除
+DELETE {{base}}/api/items/1

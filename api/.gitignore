@@ -1,0 +1,9 @@
+# SQLite データベース（実行時に生成される）
+*.sqlite3
+*.db
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
